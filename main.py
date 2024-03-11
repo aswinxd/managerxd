@@ -55,10 +55,32 @@ def clone_bot(message):
         bot.reply_to(message, f"Error creating bot instance: {e}")
         return
     
-    # Register the same handlers to the new bot instance
-    clone_bot.add_message_handler(start)
-    clone_bot.add_message_handler(kick_user)
-    clone_bot.add_message_handler(ban_user)
+    # Define handlers for the cloned bot instance
+    @clone_bot.message_handler(commands=['start'])
+    def start_cloned(message):
+        clone_bot.reply_to(message, "Welcome! I'm your cloned group management bot.")
+
+    @clone_bot.message_handler(commands=['kick'])
+    def kick_user_cloned(message):
+        if message.reply_to_message:
+            kicked_user_id = message.reply_to_message.from_user.id
+            clone_bot.kick_chat_member(message.chat.id, kicked_user_id)
+            clone_bot.send_message(message.chat.id, "User kicked!")
+        else:
+            clone_bot.reply_to(message, "Reply to a user's message to kick them.")
+
+    @clone_bot.message_handler(commands=['ban'])
+    def ban_user_cloned(message):
+        if message.reply_to_message:
+            banned_user_id = message.reply_to_message.from_user.id
+            clone_bot.kick_chat_member(message.chat.id, banned_user_id)
+            clone_bot.send_message(message.chat.id, "User banned!")
+            clone_bot.unban_chat_member(message.chat.id, banned_user_id)
+        else:
+            clone_bot.reply_to(message, "Reply to a user's message to ban them.")
+    
+    # Start the polling for the cloned bot
+    clone_bot.polling(none_stop=True)
     
     bot.reply_to(message, "Bot cloned successfully!")
 
