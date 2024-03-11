@@ -79,9 +79,6 @@ def clone_bot(message):
         else:
             clone_bot.reply_to(message, "Reply to a user's message to ban them.")
     
-    # Start the polling for the cloned bot
-    clone_bot.polling(none_stop=True)
-    
     bot.reply_to(message, "Bot cloned successfully!")
 
 # Start the bot
