@@ -17,6 +17,9 @@ def clone(update, context):
         return
     clone_token = context.args[0]
     try:
+        # Stop the polling of the original bot
+        context.bot.stop_polling()
+
         clone_updater = Updater(token=clone_token, use_context=True)
         clone_dispatcher = clone_updater.dispatcher
         # Add handlers for any other commands or functionalities you want to clone
