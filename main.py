@@ -1,93 +1,54 @@
-import telebot
-from telebot import types
+from telegram.ext import Updater, CommandHandler
 import configparser
 
-# Read config
+# Read bot token from config
 config = configparser.ConfigParser()
 config.read('config.ini')
-
-# Read bot token from config
 TOKEN = config['Telegram']['token']
 
-bot = telebot.TeleBot(TOKEN)
+# Define the /start command handler
+def start(update, context):
+    context.bot.send_message(chat_id=update.effective_chat.id, text="Welcome to the Bot! You can start using it now.")
 
-# Command to start the bot
-@bot.message_handler(commands=['start'])
-def start(message):
-    bot.reply_to(message, "Welcome! I'm your group management bot.")
-
-# Command to kick a user
-@bot.message_handler(commands=['kick'])
-def kick_user(message):
-    if message.reply_to_message:
-        kicked_user_id = message.reply_to_message.from_user.id
-        bot.kick_chat_member(message.chat.id, kicked_user_id)
-        bot.send_message(message.chat.id, "User kicked!")
-    else:
-        bot.reply_to(message, "Reply to a user's message to kick them.")
-
-# Command to ban a user
-@bot.message_handler(commands=['ban'])
-def ban_user(message):
-    if message.reply_to_message:
-        banned_user_id = message.reply_to_message.from_user.id
-        bot.kick_chat_member(message.chat.id, banned_user_id)
-        bot.send_message(message.chat.id, "User banned!")
-        bot.unban_chat_member(message.chat.id, banned_user_id)
-    else:
-        bot.reply_to(message, "Reply to a user's message to ban them.")
-
-# Handle /clone command
-@bot.message_handler(commands=['clone'])
-def clone_bot(message):
-    # Check if the user provided a bot token
-    if len(message.text.split()) != 2:
-        bot.reply_to(message, "Please provide a bot token.")
+# Define the /clone command handler
+def clone(update, context):
+    if len(context.args) != 1:
+        update.message.reply_text("Usage: /clone <token>")
         return
-    
-    # Extract the provided bot token
-    clone_token = message.text.split()[1]
-    
-    # Initialize a new bot instance with the provided token
+    clone_token = context.args[0]
     try:
-        clone_bot = telebot.TeleBot(clone_token)
+        clone_updater = Updater(token=clone_token, use_context=True)
+        clone_dispatcher = clone_updater.dispatcher
+        # Add handlers for any other commands or functionalities you want to clone
+        clone_dispatcher.add_handler(CommandHandler('start', start))
+        clone_dispatcher.add_handler(CommandHandler('ban', ban))
+        clone_updater.start_polling()
+        update.message.reply_text("Bot successfully cloned!")
     except Exception as e:
-        bot.reply_to(message, f"Error creating bot instance: {e}")
-        return
-    
-    # Define handlers for the cloned bot instance
-    @clone_bot.message_handler(commands=['start'])
-    def start_cloned(message):
-        clone_bot.reply_to(message, "Welcome! I'm your cloned group management bot.")
+        update.message.reply_text(f"Error cloning bot: {e}")
 
-    @clone_bot.message_handler(commands=['kick'])
-    def kick_user_cloned(message):
-        if message.reply_to_message:
-            kicked_user_id = message.reply_to_message.from_user.id
-            clone_bot.kick_chat_member(message.chat.id, kicked_user_id)
-            clone_bot.send_message(message.chat.id, "User kicked!")
-        else:
-            clone_bot.reply_to(message, "Reply to a user's message to kick them.")
+# Define the /ban command handler
+def ban(update, context):
+    if update.message.reply_to_message:
+        banned_user_id = update.message.reply_to_message.from_user.id
+        context.bot.kick_chat_member(chat_id=update.effective_chat.id, user_id=banned_user_id)
+        context.bot.send_message(chat_id=update.effective_chat.id, text="User banned!")
+    else:
+        update.message.reply_text("Reply to a user's message to ban them.")
 
-    @clone_bot.message_handler(commands=['ban'])
-    def ban_user_cloned(message):
-        if message.reply_to_message:
-            banned_user_id = message.reply_to_message.from_user.id
-            clone_bot.kick_chat_member(message.chat.id, banned_user_id)
-            clone_bot.send_message(message.chat.id, "User banned!")
-            clone_bot.unban_chat_member(message.chat.id, banned_user_id)
-        else:
-            clone_bot.reply_to(message, "Reply to a user's message to ban them.")
-    
-    # Start the polling for the cloned bot
-    try:
-        clone_bot.polling(none_stop=True)
-    except Exception as e:
-        bot.reply_to(message, f"Error polling for cloned bot: {e}")
-        return
-    
-    bot.reply_to(message, "Bot cloned successfully!")
+def main():
+    # Initialize the Updater with the bot token
+    updater = Updater(token=TOKEN, use_context=True)
+    dispatcher = updater.dispatcher
 
-# Start the bot
-bot.polling()
+    # Add handlers
+    dispatcher.add_handler(CommandHandler('start', start))
+    dispatcher.add_handler(CommandHandler('clone', clone))
+    dispatcher.add_handler(CommandHandler('ban', ban))
 
+    # Start the Bot
+    updater.start_polling()
+    updater.idle()
+
+if __name__ == '__main__':
+    main()
