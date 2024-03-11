@@ -79,7 +79,15 @@ def clone_bot(message):
         else:
             clone_bot.reply_to(message, "Reply to a user's message to ban them.")
     
+    # Start the polling for the cloned bot
+    try:
+        clone_bot.polling(none_stop=True)
+    except Exception as e:
+        bot.reply_to(message, f"Error polling for cloned bot: {e}")
+        return
+    
     bot.reply_to(message, "Bot cloned successfully!")
 
 # Start the bot
 bot.polling()
+
